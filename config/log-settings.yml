@@ -1,0 +1,35 @@
+app:
+    file: 'app'
+    level: TRACE
+    enabled: false
+    console: true
+
+in:
+    file: 'in'
+    level: DEBUG
+    enabled: true
+    console: false
+
+out:
+    file: 'out'
+    level: INFO
+    enabled: true
+    console: false
+
+db:
+    file: 'db'
+    level: WARN
+    enabled: true
+    console: true
+
+kafka:
+    file: 'kafka'
+    level: ERROR
+    enabled: true
+    console: true
+
+summary:
+    file: 'summary'
+    level: TRACE
+    enabled: false
+    console: true
