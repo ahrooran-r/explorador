@@ -1,8 +1,8 @@
 package lk.uom.dc.log;
 
-import lk.uom.dc.settings.Base;
+import lk.uom.dc.settings.Yaml;
 import lk.uom.dc.settings.Constants;
-import lk.uom.dc.settings.LogConfig;
+import lk.uom.dc.settings.Log;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.experimental.Delegate;
@@ -41,10 +41,10 @@ public enum LogManager {
     LogManager(String name) {
 
         try {
-            this.file = LogConfig.get(name, "file").asText();
-            this.enabled = LogConfig.get(name, "enabled").asBoolean();
-            this.enableConsole = LogConfig.get(name, "console").asBoolean();
-            this.level = Base.getMapper().treeToValue(LogConfig.get(name, "level"), Level.class);
+            this.file = Log.get(name, "file").asText();
+            this.enabled = Log.get(name, "enabled").asBoolean();
+            this.enableConsole = Log.get(name, "console").asBoolean();
+            this.level = Yaml.getMapper().treeToValue(Log.get(name, "level"), Level.class);
             this.logger = LoggerFactory.getLogger(Constants.PACKAGE_NAME + "." + name);
 
         } catch (IOException ioException) {

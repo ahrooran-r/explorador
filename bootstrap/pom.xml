@@ -3,31 +3,25 @@
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
-        <artifactId>dcs</artifactId>
         <groupId>lk.uom.dc</groupId>
+        <artifactId>dcs</artifactId>
         <version>0.0.1-SNAPSHOT</version>
     </parent>
 
-    <artifactId>log</artifactId>
+    <artifactId>bootstrap</artifactId>
     <packaging>jar</packaging>
-    <name>log</name>
+
+    <name>bootstrap</name>
+    <description>
+        A new node that comes up gets connected to 2 randomly selected nodes existing in the distributed system.
+        A Bootstrap Server (BS) is provided to facilitate this step.
+    </description>
 
     <dependencies>
-
         <dependency>
             <groupId>lk.uom.dc</groupId>
-            <artifactId>common</artifactId>
+            <artifactId>log</artifactId>
         </dependency>
-
-        <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-api</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>ch.qos.logback</groupId>
-            <artifactId>logback-classic</artifactId>
-        </dependency>
-
     </dependencies>
+
 </project>

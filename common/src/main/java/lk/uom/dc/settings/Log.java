@@ -9,13 +9,13 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
-public class LogConfig {
+public class Log {
 
     private static final JsonNode logConfig;
 
     static {
         try {
-            logConfig = Base
+            logConfig = Yaml
                     .getMapper()
                     .readTree(Files.newBufferedReader(Constants.LOG_SETTINGS_PATH, StandardCharsets.UTF_8));
         } catch (IOException rethrow) {

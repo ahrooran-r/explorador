@@ -11,7 +11,8 @@
 
     <modules>
         <module>log</module>
-        <module>settings</module>
+        <module>common</module>
+        <module>bootstrap</module>
     </modules>
 
     <name>Distributed-Content-Searching</name>
@@ -76,7 +77,13 @@
 
             <dependency>
                 <groupId>lk.uom.dc</groupId>
-                <artifactId>settings</artifactId>
+                <artifactId>common</artifactId>
+                <version>0.0.1-SNAPSHOT</version>
+            </dependency>
+
+            <dependency>
+                <groupId>lk.uom.dc</groupId>
+                <artifactId>log</artifactId>
                 <version>0.0.1-SNAPSHOT</version>
             </dependency>
 
