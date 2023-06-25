@@ -12,7 +12,6 @@
     <import class="lk.uom.dc.log.LoggerNameBasedDiscriminator"/>
     <import class="ch.qos.logback.classic.AsyncAppender"/>
     <import class="lk.uom.dc.log.ConditionalConsoleAppender"/>
-    <import class="lk.uom.dc.log.DelegateAwareClassCallerConverter"/>
 
     <!--<statusListener class="OnConsoleStatusListener"/>-->
 
@@ -20,7 +19,7 @@
     <property name="LOG_PATH" value="./logs"/>
 
     <!-- @formatter:off -->
-    <conversionRule conversionWord="delegateAwareClass" converterClass="DelegateAwareClassCallerConverter" />
+    <conversionRule conversionWord="delegateAwareClass" converterClass="lk.uom.dc.log.DelegateAwareClassCallerConverter" />
     <property name="LOG_FMT" value="%gray([%d{yyyy-MM-dd HH:mm:ss.SSS}]) %green(%logger{0}) %magenta([%thread]) %highlight(%-5level) %cyan(%delegateAwareClass) - %msg%n%throwable"/>
     <!-- @formatter:on -->
 
