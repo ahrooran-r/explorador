@@ -4,12 +4,12 @@ import java.net.InetSocketAddress;
 import java.util.Objects;
 
 public record Peer(
-        InetSocketAddress socket,
+        InetSocketAddress address,
         String username
 ) {
 
     public Peer {
-        Objects.requireNonNull(socket);
+        Objects.requireNonNull(address);
         if (null == username || 0 == username.length()) throw new IllegalArgumentException("username is empty");
     }
 
@@ -20,12 +20,12 @@ public record Peer(
 
         Peer peer = (Peer) o;
 
-        if (socket.getPort() != peer.socket.getPort()) return false;
+        if (address.getPort() != peer.address.getPort()) return false;
         return username.equals(peer.username);
     }
 
     @Override
     public int hashCode() {
-        return 31 * socket.getPort() + username.hashCode();
+        return 31 * address.getPort() + username.hashCode();
     }
 }

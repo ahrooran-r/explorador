@@ -1,10 +1,12 @@
 package lk.uom.dc.data.message;
 
-import lombok.AllArgsConstructor;
+import lk.uom.dc.data.Peer;
+import lk.uom.dc.settings.Settings;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import java.net.InetSocketAddress;
+import java.util.Objects;
 import java.util.StringJoiner;
 
 /**
@@ -29,47 +31,49 @@ import java.util.StringJoiner;
  * </ol>
  */
 @NoArgsConstructor
-@AllArgsConstructor
 @Getter
 public class Request extends Message {
 
-    //    private int length;
     private Token token;
-    private InetSocketAddress sender;
-    private String username;
+
+    public Request(Token token, Peer sender) {
+        this.token = token;
+        super.sender = sender;
+    }
 
     @Override
-    public void parseMessage(String raw) {
+    public void parseMessage(String message) {
 
-        String[] split = raw.split(" ");
+        String[] split = message.split(Settings.FS);
 
-        int length = Integer.parseInt(split[0]);
+        final int length = Integer.parseInt(split[0]);
         if (length < 0 || length > 9999) {
             throw new IllegalArgumentException("username length must be between 0 and 9999");
         }
 
-        if (length != raw.length()) throw new IllegalArgumentException("corrupt message");
+        if (length != message.length()) throw new IllegalArgumentException("corrupt message");
 
-        this.token = Token.valueOf(split[1].toUpperCase());
+        token = Token.valueOf(split[1].toUpperCase());
 
-        String host = split[2];
-        int port = Integer.parseInt(split[3]);
-        this.sender = new InetSocketAddress(host, port);
-
-        this.username = split[3];
+        final String host = split[2];
+        final int port = Integer.parseInt(split[3]);
+        final String username = split[3];
+        sender = new Peer(new InetSocketAddress(host, port), username);
     }
 
     @Override
     protected StringJoiner toStringJoiner() {
-        return new StringJoiner(DELIMITER)
+        Objects.requireNonNull(token);
+        Objects.requireNonNull(sender);
+
+        return new StringJoiner(Settings.FS)
                 .add(token.name().toUpperCase())
-                .add(sender.getAddress().getHostAddress())
-                .add(String.valueOf(sender.getPort()))
-                .add(username);
+                .add(sender.address().getAddress().getHostAddress())
+                .add(String.valueOf(sender.address().getPort()))
+                .add(sender.username());
     }
 
     public enum Token {
-
         REG("register request"),
         UNREG("un register request"),
         ECHO("echo request");

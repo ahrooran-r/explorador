@@ -1,8 +1,8 @@
 package lk.uom.dc.log;
 
-import lk.uom.dc.settings.Yaml;
-import lk.uom.dc.settings.Constants;
 import lk.uom.dc.settings.Log;
+import lk.uom.dc.settings.Settings;
+import lk.uom.dc.settings.Yaml;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.experimental.Delegate;
@@ -18,9 +18,7 @@ public enum LogManager {
     APP("app"),
     IN("in"),
     OUT("out"),
-    DB("db"),
-    KAFKA("kafka"),
-    SUMMARY("summary");
+    PING("ping");
 
     @Delegate
     @Getter(AccessLevel.NONE)
@@ -45,7 +43,7 @@ public enum LogManager {
             this.enabled = Log.get(name, "enabled").asBoolean();
             this.enableConsole = Log.get(name, "console").asBoolean();
             this.level = Yaml.getMapper().treeToValue(Log.get(name, "level"), Level.class);
-            this.logger = LoggerFactory.getLogger(Constants.PACKAGE_NAME + "." + name);
+            this.logger = LoggerFactory.getLogger(Settings.PACKAGE_NAME + "." + name);
 
         } catch (IOException ioException) {
             ioException.printStackTrace();
@@ -54,14 +52,12 @@ public enum LogManager {
     }
 
     public static LogManager get(String fullyQualifiedName) {
-        final String prefix = Constants.PACKAGE_NAME + ".";
+        final String prefix = Settings.PACKAGE_NAME + ".";
         return switch (fullyQualifiedName.toLowerCase()) {
             case prefix + "app" -> LogManager.APP;
             case prefix + "in" -> LogManager.IN;
             case prefix + "out" -> LogManager.OUT;
-            case prefix + "db" -> LogManager.DB;
-            case prefix + "kafka" -> LogManager.KAFKA;
-            case prefix + "summary" -> LogManager.SUMMARY;
+            case prefix + "ping" -> LogManager.PING;
             default -> null;
         };
     }

@@ -10,21 +10,17 @@ import lombok.Setter;
 import java.util.Objects;
 import java.util.StringJoiner;
 
-import static lk.uom.dc.log.LogManager.APP;
+import static lk.uom.dc.log.LogManager.PING;
 
 @NoArgsConstructor
 @Getter
 @Setter(AccessLevel.NONE)
-public class UnRegOk extends Message {
+public class PingPong extends Message {
 
     @Getter(AccessLevel.NONE)
-    private Token parent;
+    private Token token;
 
-    private Token value;
-
-    public UnRegOk(Token value, Peer sender) {
-        this.parent = Token.UNROK;
-        this.value = value;
+    public PingPong(Peer sender) {
         this.sender = sender;
     }
 
@@ -39,32 +35,31 @@ public class UnRegOk extends Message {
 
         if (length != message.length()) throw new IllegalArgumentException("corrupt message");
 
-        parent = Token.valueOf(split[1].toUpperCase());
-        value = Token.valueOf(split[2].toUpperCase());
+        token = Token.valueOf(split[1].toUpperCase());
 
-        switch (value) {
-            case SUCCESS -> APP.info("{}, message: {}", value.description, message);
-            case FAILURE -> APP.error("{}, message: {}", value.description, message);
+        String host = split[2];
+        int port = Integer.parseInt(split[3]);
+
+        switch (token) {
+            case PING, PONG -> PING.info("{}, from -> host: {}, port: {}", token.description, host, port);
         }
-
-        // sender is not set yet
     }
 
     @Override
     protected StringJoiner toStringJoiner() {
-        Objects.requireNonNull(parent);
-        Objects.requireNonNull(value);
+        Objects.requireNonNull(token);
+        Objects.requireNonNull(sender);
 
         return new StringJoiner(Settings.FS)
-                .add(parent.name().toUpperCase())
-                .add(value.id);
+                .add(token.name().toUpperCase())
+                .add(sender.address().getAddress().getHostAddress())
+                .add(String.valueOf(sender.address().getPort()));
     }
 
     public enum Token {
 
-        UNROK("UNROK", "unregister command"),
-        SUCCESS("0", "successfully unregistered"),
-        FAILURE("9997", "error while unregistering. IP and port may not be in the registry or command is incorrect.");
+        PING("PING", "calling ping"),
+        PONG("PONG", "echoing pong");
 
         public final String id;
         public final String description;

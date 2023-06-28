@@ -29,5 +29,10 @@
             <artifactId>jackson-module-afterburner</artifactId>
         </dependency>
 
+        <dependency>
+            <groupId>lk.uom.dc</groupId>
+            <artifactId>log</artifactId>
+        </dependency>
+
     </dependencies>
 </project>

@@ -1,144 +1,172 @@
 package lk.uom.dc;
 
-import lk.uom.dc.data.*;
+import lk.uom.dc.data.Peer;
 import lk.uom.dc.data.message.*;
+import lk.uom.dc.settings.Settings;
 
 import java.io.IOException;
-import java.net.DatagramPacket;
-import java.net.DatagramSocket;
-import java.net.InetSocketAddress;
-import java.net.SocketAddress;
-import java.nio.charset.StandardCharsets;
+import java.net.*;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 import java.util.Random;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Predicate;
 
-import static lk.uom.dc.log.LogManager.*;
+import static lk.uom.dc.log.LogManager.APP;
 
-public class BootstrapServer {
+public class BootstrapServer implements BootstrapMessageListener, AutoCloseable {
+
+    private final DatagramSocket serverSocket;
+
+    /**
+     * bootstrap server itself is considered a peer
+     */
+    private final Peer self;
+
+    /**
+     * Holds the list of current peers in the network.
+     * <p>
+     * Not thread safe. Use locks when necessary.
+     */
+    private final List<Peer> peers;
+
+    public BootstrapServer(InetSocketAddress socketAddress) throws SocketException {
+
+        // assume only 1 bootstrap is available
+        this.self = new Peer(socketAddress, "bootstrap");
+
+        serverSocket = new DatagramSocket(socketAddress);
+        peers = new ArrayList<>(16);
+        APP.info("Bootstrap Server created at {}. Waiting for incoming data...", serverSocket.getPort());
+    }
 
     public static void main(String[] args) {
-        List<Peer> nodes = new ArrayList<>(100);
-
         try (
-                DatagramSocket sock = new DatagramSocket(55555)
+                BootstrapServer bootstrap = new BootstrapServer(
+                        new InetSocketAddress(Settings.BOOTSTRAP_HOST, Settings.BOOTSTRAP_PORT))
         ) {
-
-            APP.info("Bootstrap Server created at {}. Waiting for incoming data...", sock.getPort());
-
             //noinspection InfiniteLoopStatement
             while (true) {
-
-                byte[] buffer = new byte[65536];
+                byte[] buffer = new byte[Settings.BOOTSTRAP_MSG_SIZE];
                 DatagramPacket incoming = new DatagramPacket(buffer, buffer.length);
-                sock.receive(incoming);
+                bootstrap.serverSocket.receive(incoming);
 
-                String raw = new String(incoming.getData(), 0, incoming.getLength(), StandardCharsets.UTF_8);
-                IN.info("{} : {} - {}", incoming.getAddress().getHostAddress(), incoming.getPort(), raw);
-
-                Request request = new Request();
-                request.parseMessage(raw);
-
-                // this is the peer that wants to join
-                Peer joinee = new Peer(request.getSender(), request.getUsername());
-
-                switch (request.getToken()) {
-
-                    case REG -> {
-                        RegOk regOk = null;
-
-                        if (nodes.isEmpty()) {
-                            regOk = new RegOk(null, null);
-                            nodes.add(joinee);
-
-                        } else {
-                            boolean isOkay = true;
-
-                            for (Peer(InetSocketAddress socket, String username) : nodes) {
-                                if (socket.getPort() == joinee.socket().getPort()) {
-                                    if (username.equalsIgnoreCase(joinee.username())) {
-                                        regOk = new RegOk(RegOk.Token.ALREADY_REGISTERED);
-                                    } else {
-                                        regOk = new RegOk(RegOk.Token.PORT_OCCUPIED);
-                                    }
-                                    isOkay = false;
-                                }
-                            }
-
-                            if (isOkay) {
-                                switch (nodes.size()) {
-                                    case 1 -> regOk = new RegOk(nodes.get(0), null);
-                                    case 2 -> regOk = new RegOk(nodes.get(0), nodes.get(0));
-                                    default -> {
-                                        Random r = ThreadLocalRandom.current();
-                                        int first = r.nextInt(nodes.size());
-                                        int second;
-                                        do {
-                                            second = r.nextInt(nodes.size());
-                                        } while (first == second);
-
-                                        APP.debug("first: {}, second: {}", first, second);
-                                        regOk = new RegOk(nodes.get(first), nodes.get(second));
-                                    }
-                                }
-
-                                nodes.add(joinee);
-                            }
-                        }
-
-                        sendResponse(regOk, sock, incoming.getSocketAddress());
-                    }
-
-                    case UNREG -> {
-
-                        Predicate<Peer> replyAndRemove = peer -> {
-                            boolean shouldRemove = peer.socket().getPort() == joinee.socket().getPort();
-
-                            if (shouldRemove) {
-                                UnRegOk unregOk = new UnRegOk(UnRegOk.Token.NO_NODES);
-                                try {
-                                    sendResponse(unregOk, sock, incoming.getSocketAddress());
-                                } catch (IOException ioException) {
-                                    APP.error("could not send reply: {}", unregOk.toString(), ioException);
-                                }
-                            }
-                            return shouldRemove;
-                        };
-
-                        nodes.removeIf(replyAndRemove);
-                    }
-
-                    case ECHO -> {
-                        for (Peer(InetSocketAddress socket, String username) : nodes) {
-                            APP.info("IP: {} PORT: {} USER_NAME:{}",
-                                    socket.getAddress().getHostAddress(),
-                                    socket.getPort(),
-                                    username
-                            );
-                        }
-                        EchoOk echoOk = new EchoOk(EchoOk.Token.SUCCESSFUL);
-                        sendResponse(echoOk, sock, incoming.getSocketAddress());
-                    }
-                }
+                bootstrap.onMessage(incoming);
             }
         } catch (IOException e) {
             APP.error(e.getMessage(), e);
+        } catch (Exception e) {
+            APP.error(e.getMessage(), e);
+            System.exit(-1);
         }
     }
 
-    private static void sendResponse(Message message, DatagramSocket from, SocketAddress to) throws IOException {
-        Objects.requireNonNull(message);
-        Objects.requireNonNull(from);
-        Objects.requireNonNull(to);
+    /**
+     * Handles incoming messages from Peers and responds accordingly.
+     */
+    @Override
+    public void onMessage(Request request) throws IOException {
+        switch (request.getToken()) {
+            case REG -> handleReg(request);
+            case UNREG -> handleUnReg(request);
+            case ECHO -> {
+                // small code so I didn't move to a separate method
+                for (Peer(InetSocketAddress socket, String username) : peers) {
+                    APP.info("IP: {} PORT: {} USER_NAME:{}",
+                            socket.getAddress().getHostAddress(),
+                            socket.getPort(),
+                            username
+                    );
+                }
+                EchoOk echoOk = new EchoOk(EchoOk.Token.SUCCESSFUL, self);
+                reply(echoOk, request.getSender().address());
+            }
+        }
+    }
 
-        String reply = message.toString();
-        byte[] bytes = reply.getBytes(StandardCharsets.UTF_8);
-        DatagramPacket packet = new DatagramPacket(bytes, bytes.length, to);
-        from.send(packet);
+    /**
+     * Handles register request.
+     */
+    private void handleReg(Request request) throws IOException {
 
-        OUT.info("IP: {} MESSAGE{}", to, reply);
+        final Peer joinee = request.getSender();
+        RegOk regOk = null;
+
+        if (peers.isEmpty()) {
+            regOk = new RegOk(null, null);
+            peers.add(joinee);
+
+        } else {
+            boolean isOkay = true;
+
+            for (Peer(InetSocketAddress socket, String username) : peers) {
+                if (socket.getPort() == joinee.address().getPort()) {
+                    if (username.equalsIgnoreCase(joinee.username())) {
+                        regOk = new RegOk(RegOk.Token.ALREADY_REGISTERED, self);
+                    } else {
+                        regOk = new RegOk(RegOk.Token.PORT_OCCUPIED, self);
+                    }
+                    isOkay = false;
+                }
+            }
+
+            if (isOkay) {
+                switch (peers.size()) {
+                    case 1 -> regOk = new RegOk(peers.get(0), null, self);
+                    case 2 -> regOk = new RegOk(peers.get(0), peers.get(0), self);
+                    default -> {
+                        Random r = ThreadLocalRandom.current();
+                        int first = r.nextInt(peers.size());
+                        int second;
+                        do {
+                            second = r.nextInt(peers.size());
+                        } while (first == second);
+
+                        APP.debug("first: {}, second: {}", first, second);
+                        regOk = new RegOk(peers.get(first), peers.get(second), self);
+                    }
+                }
+
+                peers.add(joinee);
+            }
+        }
+
+        reply(regOk, joinee.address());
+    }
+
+    /**
+     * Handles unregister request.
+     */
+    private void handleUnReg(Request request) {
+
+        Peer joinee = request.getSender();
+
+        Predicate<Peer> replyAndRemove = peer -> {
+            boolean shouldRemove = peer.address().getPort() == joinee.address().getPort();
+
+            if (shouldRemove) {
+                UnRegOk unregOk = new UnRegOk(UnRegOk.Token.SUCCESS, self);
+                try {
+                    reply(unregOk, joinee.address());
+                } catch (IOException ioException) {
+                    APP.error("could not send reply: {}", unregOk.toString(), ioException);
+                }
+            }
+            return shouldRemove;
+        };
+
+        peers.removeIf(replyAndRemove);
+    }
+
+    /**
+     * Returns response. Should move to common package since Peer server also handles this part.
+     */
+    private void reply(Message message, SocketAddress to) throws IOException {
+        NetAssist.send(message, serverSocket, to);
+    }
+
+    @Override
+    public void close() throws Exception {
+        serverSocket.close();
     }
 }

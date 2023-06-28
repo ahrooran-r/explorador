@@ -1,0 +1,10 @@
+peerServer:
+  host: localhost
+  port: 4444
+  username: barbossa
+  pingDuration: PT1M
+
+bootstrap:
+  host: localhost
+  port: 55555
+  msgSize: 65536

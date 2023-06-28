@@ -1,35 +1,23 @@
 app:
-    file: 'app'
-    level: TRACE
-    enabled: false
-    console: true
+  file: 'app'
+  level: TRACE
+  enabled: true
+  console: true
 
 in:
-    file: 'in'
-    level: DEBUG
-    enabled: true
-    console: false
+  file: 'in'
+  level: DEBUG
+  enabled: true
+  console: true
 
 out:
-    file: 'out'
-    level: INFO
-    enabled: true
-    console: false
+  file: 'out'
+  level: INFO
+  enabled: true
+  console: true
 
-db:
-    file: 'db'
-    level: WARN
-    enabled: true
-    console: true
-
-kafka:
-    file: 'kafka'
-    level: ERROR
-    enabled: true
-    console: true
-
-summary:
-    file: 'summary'
-    level: TRACE
-    enabled: false
-    console: true
+ping:
+  file: 'ping'
+  level: INFO
+  enabled: true
+  console: false

@@ -11,19 +11,19 @@ import java.nio.file.Files;
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class Log {
 
-    private static final JsonNode logConfig;
+    private static final JsonNode log;
 
     static {
         try {
-            logConfig = Yaml
+            log = Yaml
                     .getMapper()
-                    .readTree(Files.newBufferedReader(Constants.LOG_SETTINGS_PATH, StandardCharsets.UTF_8));
+                    .readTree(Files.newBufferedReader(Settings.LOG_SETTINGS_PATH, StandardCharsets.UTF_8));
         } catch (IOException rethrow) {
             throw new RuntimeException(rethrow);
         }
     }
 
     public static JsonNode get(String logger, String setting) {
-        return logConfig.get(logger).get(setting);
+        return log.get(logger).get(setting);
     }
 }

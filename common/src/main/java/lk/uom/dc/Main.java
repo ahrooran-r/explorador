@@ -1,6 +1,7 @@
 package lk.uom.dc;
 
 import lk.uom.dc.settings.Log;
+import lk.uom.dc.settings.Settings;
 
 public class Main {
     public static void main(String[] args) {
@@ -9,9 +10,8 @@ public class Main {
         var v2 = Log.get("app", "enabled").asBoolean();
         var v3 = Log.get("app", "console").asBoolean();
 
-        System.out.println(v1);
-        System.out.println(v2);
-        System.out.println(v3);
+        System.out.println(Settings.BOOTSTRAP_PORT);
+        System.out.println(Settings.PEER_PORT);
 
     }
 }

@@ -17,5 +17,10 @@
             <groupId>lk.uom.dc</groupId>
             <artifactId>log</artifactId>
         </dependency>
+
+        <dependency>
+            <groupId>lk.uom.dc</groupId>
+            <artifactId>common</artifactId>
+        </dependency>
     </dependencies>
 </project>
