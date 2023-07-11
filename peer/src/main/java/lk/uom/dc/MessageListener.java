@@ -10,7 +10,7 @@ import static lk.uom.dc.log.LogManager.IN;
 /**
  * Listens for messages from Peers and Bootstrap
  */
-public interface PeerMessageListener extends MessageListener {
+public interface MessageListener extends AbstractMessageListener {
 
     void onMessage(String message, InetSocketAddress sender) throws IOException;
 
