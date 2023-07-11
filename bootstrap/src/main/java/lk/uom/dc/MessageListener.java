@@ -8,7 +8,7 @@ import java.net.DatagramPacket;
 /**
  * Listens for messages from Bootstrap
  */
-public interface BootstrapMessageListener extends MessageListener {
+public interface MessageListener extends AbstractMessageListener {
 
     void onMessage(Request request) throws IOException;
 

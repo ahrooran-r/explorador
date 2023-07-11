@@ -1,6 +1,5 @@
 package lk.uom.dc;
 
-import lk.uom.dc.data.Peer;
 import lk.uom.dc.data.message.*;
 import lk.uom.dc.settings.Settings;
 
@@ -14,7 +13,7 @@ import java.util.function.Predicate;
 
 import static lk.uom.dc.log.LogManager.APP;
 
-public class BootstrapServer implements BootstrapMessageListener, AutoCloseable {
+public class BootstrapServer implements MessageListener, AutoCloseable {
 
     private final DatagramSocket serverSocket;
 
@@ -33,7 +32,7 @@ public class BootstrapServer implements BootstrapMessageListener, AutoCloseable 
     public BootstrapServer(InetSocketAddress socketAddress) throws SocketException {
 
         // assume only 1 bootstrap is available
-        this.self = new Peer(socketAddress, "bootstrap");
+        this.self = new Peer(socketAddress, Settings.BOOTSTRAP_USERNAME);
 
         serverSocket = new DatagramSocket(socketAddress);
         peers = new ArrayList<>(16);
@@ -66,20 +65,20 @@ public class BootstrapServer implements BootstrapMessageListener, AutoCloseable 
      */
     @Override
     public void onMessage(Request request) throws IOException {
-        switch (request.getToken()) {
+        switch (request.getType()) {
             case REG -> handleReg(request);
             case UNREG -> handleUnReg(request);
             case ECHO -> {
                 // small code so I didn't move to a separate method
-                for (Peer(InetSocketAddress socket, String username) : peers) {
+                for (Peer peer : peers) {
                     APP.info("IP: {} PORT: {} USER_NAME:{}",
-                            socket.getAddress().getHostAddress(),
-                            socket.getPort(),
-                            username
+                            peer.getSocket().getAddress().getHostAddress(),
+                            peer.getSocket().getPort(),
+                            peer.getUsername()
                     );
                 }
                 EchoOk echoOk = new EchoOk(EchoOk.Token.SUCCESSFUL, self);
-                reply(echoOk, request.getSender().address());
+                reply(echoOk, request.getSender().getSocket());
             }
         }
     }
@@ -99,9 +98,9 @@ public class BootstrapServer implements BootstrapMessageListener, AutoCloseable 
         } else {
             boolean isOkay = true;
 
-            for (Peer(InetSocketAddress socket, String username) : peers) {
-                if (socket.getPort() == joinee.address().getPort()) {
-                    if (username.equalsIgnoreCase(joinee.username())) {
+            for (Peer peer : peers) {
+                if (peer.getSocket().getPort() == joinee.getSocket().getPort()) {
+                    if (peer.getUsername().equalsIgnoreCase(joinee.getUsername())) {
                         regOk = new RegOk(RegOk.Token.ALREADY_REGISTERED, self);
                     } else {
                         regOk = new RegOk(RegOk.Token.PORT_OCCUPIED, self);
@@ -131,7 +130,7 @@ public class BootstrapServer implements BootstrapMessageListener, AutoCloseable 
             }
         }
 
-        reply(regOk, joinee.address());
+        reply(regOk, joinee.getSocket());
     }
 
     /**
@@ -142,12 +141,12 @@ public class BootstrapServer implements BootstrapMessageListener, AutoCloseable 
         Peer joinee = request.getSender();
 
         Predicate<Peer> replyAndRemove = peer -> {
-            boolean shouldRemove = peer.address().getPort() == joinee.address().getPort();
+            boolean shouldRemove = peer.getSocket().getPort() == joinee.getSocket().getPort();
 
             if (shouldRemove) {
                 UnRegOk unregOk = new UnRegOk(UnRegOk.Token.SUCCESS, self);
                 try {
-                    reply(unregOk, joinee.address());
+                    reply(unregOk, joinee.getSocket());
                 } catch (IOException ioException) {
                     APP.error("could not send reply: {}", unregOk.toString(), ioException);
                 }
@@ -166,7 +165,7 @@ public class BootstrapServer implements BootstrapMessageListener, AutoCloseable 
     }
 
     @Override
-    public void close() throws Exception {
+    public void close() {
         serverSocket.close();
     }
 }
