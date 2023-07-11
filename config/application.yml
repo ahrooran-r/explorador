@@ -2,7 +2,10 @@ peerServer:
   host: localhost
   port: 4444
   username: barbossa
-  pingDuration: PT1M
+  pingInterval: PT1M
+  joinInterval: PT10S
+  numPeers: 2
+  failureCount: 3
 
 bootstrap:
   host: localhost
