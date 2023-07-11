@@ -28,11 +28,14 @@ public class Settings {
     public static final int PEER_PORT;
     public static final String PEER_USERNAME;
     public static final Duration PING_INTERVAL;
+    public static final int NUM_PEERS;
+    public static final int FAILURE_COUNT;
 
     /*
      * Bootstrap server settings
      * */
     public static final String BOOTSTRAP_HOST;
+    public static final String BOOTSTRAP_USERNAME = "bootstrap";
     public static final int BOOTSTRAP_PORT;
 
     /**
@@ -63,6 +66,8 @@ public class Settings {
         PEER_PORT = peerServer.get("port").asInt();
         PEER_USERNAME = peerServer.get("username").toString();
         PING_INTERVAL = Duration.parse(peerServer.get("pingInterval").toString());
+        NUM_PEERS = peerServer.get("numPeers").intValue();
+        FAILURE_COUNT = peerServer.get("failureCount").intValue();
     }
 
     private Settings() {
