@@ -33,24 +33,6 @@ public class Main {
         OUT.warn("OUT_WARN");
         OUT.error("OUT_ERROR");
 
-        DB.trace("DB_TRACE");
-        DB.debug("DB_DEBUG");
-        DB.info("DB_INFO");
-        DB.warn("DB_WARN");
-        DB.error("DB_ERROR");
-
-        KAFKA.trace("KAFKA_TRACE");
-        KAFKA.debug("KAFKA_DEBUG");
-        KAFKA.info("KAFKA_INFO");
-        KAFKA.warn("KAFKA_WARN");
-        KAFKA.error("KAFKA_ERROR");
-
-        SUMMARY.trace("SUMMARY_TRACE");
-        SUMMARY.debug("SUMMARY_DEBUG");
-        SUMMARY.info("SUMMARY_INFO");
-        SUMMARY.warn("SUMMARY_WARN");
-        SUMMARY.error("SUMMARY_ERROR");
-
         log.trace("OTHER_TRACE");
         log.debug("OTHER_DEBUG");
         log.info("OTHER_INFO");

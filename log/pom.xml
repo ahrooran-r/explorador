@@ -13,10 +13,9 @@
     <name>log</name>
 
     <dependencies>
-
         <dependency>
             <groupId>lk.uom.dc</groupId>
-            <artifactId>common</artifactId>
+            <artifactId>settings</artifactId>
         </dependency>
 
         <dependency>
