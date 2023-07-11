@@ -9,5 +9,5 @@ peerServer:
 
 bootstrap:
   host: localhost
-  port: 55555
+  port: 5555
   msgSize: 65536

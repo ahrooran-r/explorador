@@ -49,25 +49,6 @@ public class PeerServer implements AutoCloseable {
         APP.info("Peer Server created at {}. Waiting for incoming data...", socket.getPort());
     }
 
-    @Override
-    public void close() {
-        socket.close();
-    }
-
-    /**
-     * Returns response. Should move to common package since Peer server also handles this part.
-     */
-    public void send(Message message, SocketAddress to) throws IOException {
-        NetAssist.send(message, socket, to);
-    }
-
-    /**
-     * send messages to other peers
-     */
-    public void send(Message message, Peer to) throws IOException {
-        send(message, to.getSocket());
-    }
-
     public static void main(String[] args) {
         try (
                 PeerServer peerServer = new PeerServer(
@@ -116,7 +97,16 @@ public class PeerServer implements AutoCloseable {
             listenerService.start();
             APP.info("message listener service init");
 
-            // 2. start heart beat
+            // 2. start join thread
+            peerService.scheduleWithFixedDelay(
+                    join,
+                    0,
+                    Settings.PING_INTERVAL.toMillis(),
+                    TimeUnit.MILLISECONDS
+            );
+            APP.info("peer join service init");
+
+            // 3. start heart beat
             heartBeatService.scheduleWithFixedDelay(
                     heartbeat,
                     0,
@@ -135,6 +125,25 @@ public class PeerServer implements AutoCloseable {
             APP.error(e.getMessage(), e);
             System.exit(-1);
         }
+    }
+
+    @Override
+    public void close() {
+        socket.close();
+    }
+
+    /**
+     * Returns response. Should move to common package since Peer server also handles this part.
+     */
+    public void send(Message message, SocketAddress to) throws IOException {
+        NetAssist.send(message, socket, to);
+    }
+
+    /**
+     * send messages to other peers
+     */
+    public void send(Message message, Peer to) throws IOException {
+        send(message, to.getSocket());
     }
 
 }

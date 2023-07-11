@@ -36,7 +36,7 @@ public class BootstrapServer implements MessageListener, AutoCloseable {
 
         serverSocket = new DatagramSocket(socketAddress);
         peers = new ArrayList<>(16);
-        APP.info("Bootstrap Server created at {}. Waiting for incoming data...", serverSocket.getPort());
+        APP.info("Bootstrap Server created at {}. Waiting for incoming data...", serverSocket.getLocalPort());
     }
 
     public static void main(String[] args) {
@@ -44,16 +44,18 @@ public class BootstrapServer implements MessageListener, AutoCloseable {
                 BootstrapServer bootstrap = new BootstrapServer(
                         new InetSocketAddress(Settings.BOOTSTRAP_HOST, Settings.BOOTSTRAP_PORT))
         ) {
-            //noinspection InfiniteLoopStatement
+            // noinspection InfiniteLoopStatement
             while (true) {
-                byte[] buffer = new byte[Settings.BOOTSTRAP_MSG_SIZE];
-                DatagramPacket incoming = new DatagramPacket(buffer, buffer.length);
-                bootstrap.serverSocket.receive(incoming);
+                try {
+                    byte[] buffer = new byte[Settings.BOOTSTRAP_MSG_SIZE];
+                    DatagramPacket incoming = new DatagramPacket(buffer, buffer.length);
+                    bootstrap.serverSocket.receive(incoming);
 
-                bootstrap.onMessage(incoming);
+                    bootstrap.onMessage(incoming);
+                } catch (RuntimeException e) {
+                    APP.error(e.getMessage(), e);
+                }
             }
-        } catch (IOException e) {
-            APP.error(e.getMessage(), e);
         } catch (Exception e) {
             APP.error(e.getMessage(), e);
             System.exit(-1);

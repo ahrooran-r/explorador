@@ -56,16 +56,16 @@ public class Settings {
         }
 
         final JsonNode bootstrap = application.get("bootstrap");
-        BOOTSTRAP_HOST = bootstrap.get("host").toString();
+        BOOTSTRAP_HOST = bootstrap.get("host").asText();
         BOOTSTRAP_PORT = bootstrap.get("port").asInt();
         BOOTSTRAP_MSG_SIZE = bootstrap.get("msgSize").intValue();
 
 
         final JsonNode peerServer = application.get("peerServer");
-        PEER_HOST = peerServer.get("host").toString();
+        PEER_HOST = peerServer.get("host").asText();
         PEER_PORT = peerServer.get("port").asInt();
-        PEER_USERNAME = peerServer.get("username").toString();
-        PING_INTERVAL = Duration.parse(peerServer.get("pingInterval").toString());
+        PEER_USERNAME = peerServer.get("username").asText();
+        PING_INTERVAL = Duration.parse(peerServer.get("pingInterval").asText());
         NUM_PEERS = peerServer.get("numPeers").intValue();
         FAILURE_COUNT = peerServer.get("failureCount").intValue();
     }
