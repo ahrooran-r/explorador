@@ -1,6 +1,6 @@
 package lk.uom.dc.data.message;
 
-import lk.uom.dc.data.Peer;
+import lk.uom.dc.Peer;
 import lk.uom.dc.settings.Settings;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -16,13 +16,13 @@ import java.util.StringJoiner;
 public class EchoOk extends Message {
 
     @Getter(AccessLevel.NONE)
-    private Token parent;
+    private Token type;
 
-    private Token value;
+    private Token state;
 
-    public EchoOk(Token value, Peer sender) {
-        this.parent = Token.ECHOK;
-        this.value = value;
+    public EchoOk(Token state, Peer sender) {
+        this.type = Token.ECHOK;
+        this.state = state;
         this.sender = sender;
     }
 
@@ -32,12 +32,12 @@ public class EchoOk extends Message {
 
     @Override
     protected StringJoiner toStringJoiner() {
-        Objects.requireNonNull(parent);
-        Objects.requireNonNull(value);
+        Objects.requireNonNull(type);
+        Objects.requireNonNull(state);
 
         return new StringJoiner(Settings.FS)
-                .add(parent.name().toUpperCase())
-                .add(value.id);
+                .add(type.name().toUpperCase())
+                .add(state.id);
     }
 
     public enum Token {

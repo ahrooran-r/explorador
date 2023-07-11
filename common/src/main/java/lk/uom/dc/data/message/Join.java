@@ -11,34 +11,21 @@ import java.util.StringJoiner;
 
 /**
  * Message would look something like this:
+ * length -> sender of message -> sender's username
  *
- * <pre>length REG IP_address port_no username</pre>
+ * <pre>length JOIN IP_address port_no username num_hops </pre>
  * <p>
- * e.g., 0036 REG 129.82.123.45 5001 1234abcd
- *
- * <ol>
- *     <li>
- *         length – Length of the entire username including 4 characters used to indicate the length.
- *         Always give length in xxxx format to make it easy to determine the length of the username.
- *     </li>
- *     <li>REG – Registration request.</li>
- *     <li>
- *         IP_address – IP address in xxx.xxx.xxx.xxx format.
- *         This is the IP address other nodes will use to reach you. Indicated with up to 15 characters.
- *     </li>
- *     <li>port_no – Port number. This is the port number that other nodes will connect to. Up to 5 characters.</li>
- *     <li>username – A string with characters and numbers.</li>
- * </ol>
+ * e.g., 0036 JOIN 129.82.123.45 5001 1234abcd
  */
 @NoArgsConstructor
 @Getter
-public class Request extends Message {
+public class Join extends Message {
 
     private Token type;
 
-    public Request(Token type, Peer sender) {
-        this.type = type;
+    public Join(Token type, Peer sender) {
         super.sender = sender;
+        this.type = type;
     }
 
     @Override
@@ -57,7 +44,7 @@ public class Request extends Message {
 
         final String host = split[2];
         final int port = Integer.parseInt(split[3]);
-        final String username = split[3];
+        final String username = split[4];
         sender = new Peer(new InetSocketAddress(host, port), username);
     }
 
@@ -74,13 +61,19 @@ public class Request extends Message {
     }
 
     public enum Token {
-        REG("register request"),
-        UNREG("un register request"),
-        ECHO("echo request");
 
+        JOIN("JOIN", "join with me"),
+        JOINOK("JOINOK", "accept join invite"),
+        NOJOIN("NOJOIN", "reject join invite"),
+
+        UNJOIN("UNJOIN", "unjoin with me");
+        // this does not have an ok message -> fire and forget
+
+        public final String id;
         public final String description;
 
-        Token(String description) {
+        Token(String id, String description) {
+            this.id = id;
             this.description = description;
         }
     }

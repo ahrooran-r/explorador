@@ -1,6 +1,6 @@
 package lk.uom.dc.data.message;
 
-import lk.uom.dc.data.Peer;
+import lk.uom.dc.Peer;
 import lk.uom.dc.settings.Settings;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -18,13 +18,13 @@ import static lk.uom.dc.log.LogManager.APP;
 public class UnRegOk extends Message {
 
     @Getter(AccessLevel.NONE)
-    private Token parent;
+    private Token type;
 
-    private Token value;
+    private Token state;
 
-    public UnRegOk(Token value, Peer sender) {
-        this.parent = Token.UNROK;
-        this.value = value;
+    public UnRegOk(Token state, Peer sender) {
+        this.type = Token.UNROK;
+        this.state = state;
         this.sender = sender;
     }
 
@@ -39,12 +39,12 @@ public class UnRegOk extends Message {
 
         if (length != message.length()) throw new IllegalArgumentException("corrupt message");
 
-        parent = Token.valueOf(split[1].toUpperCase());
-        value = Token.valueOf(split[2].toUpperCase());
+        type = Token.valueOf(split[1].toUpperCase());
+        state = Token.valueOf(split[2].toUpperCase());
 
-        switch (value) {
-            case SUCCESS -> APP.info("{}, message: {}", value.description, message);
-            case FAILURE -> APP.error("{}, message: {}", value.description, message);
+        switch (state) {
+            case SUCCESS -> APP.info("{}, message: {}", state.description, message);
+            case FAILURE -> APP.error("{}, message: {}", state.description, message);
         }
 
         // sender is not set yet
@@ -52,12 +52,12 @@ public class UnRegOk extends Message {
 
     @Override
     protected StringJoiner toStringJoiner() {
-        Objects.requireNonNull(parent);
-        Objects.requireNonNull(value);
+        Objects.requireNonNull(type);
+        Objects.requireNonNull(state);
 
         return new StringJoiner(Settings.FS)
-                .add(parent.name().toUpperCase())
-                .add(value.id);
+                .add(type.name().toUpperCase())
+                .add(state.id);
     }
 
     public enum Token {

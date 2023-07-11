@@ -1,6 +1,6 @@
 package lk.uom.dc.data.message;
 
-import lk.uom.dc.data.Peer;
+import lk.uom.dc.Peer;
 import lk.uom.dc.settings.Settings;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -18,10 +18,11 @@ import static lk.uom.dc.log.LogManager.PING;
 public class PingPong extends Message {
 
     @Getter(AccessLevel.NONE)
-    private Token token;
+    private Token state;
 
-    public PingPong(Peer sender) {
-        this.sender = sender;
+    public PingPong(Token state, Peer from) {
+        this.state = state;
+        this.sender = from;
     }
 
     @Override
@@ -35,25 +36,25 @@ public class PingPong extends Message {
 
         if (length != message.length()) throw new IllegalArgumentException("corrupt message");
 
-        token = Token.valueOf(split[1].toUpperCase());
+        state = Token.valueOf(split[1].toUpperCase());
 
         String host = split[2];
         int port = Integer.parseInt(split[3]);
 
-        switch (token) {
-            case PING, PONG -> PING.info("{}, from -> host: {}, port: {}", token.description, host, port);
+        switch (state) {
+            case PING, PONG -> PING.info("{}, from -> host: {}, port: {}", state.description, host, port);
         }
     }
 
     @Override
     protected StringJoiner toStringJoiner() {
-        Objects.requireNonNull(token);
+        Objects.requireNonNull(state);
         Objects.requireNonNull(sender);
 
         return new StringJoiner(Settings.FS)
-                .add(token.name().toUpperCase())
-                .add(sender.address().getAddress().getHostAddress())
-                .add(String.valueOf(sender.address().getPort()));
+                .add(state.name().toUpperCase())
+                .add(sender.getSocket().getAddress().getHostAddress())
+                .add(String.valueOf(sender.getSocket().getPort()));
     }
 
     public enum Token {

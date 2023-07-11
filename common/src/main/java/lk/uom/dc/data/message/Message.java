@@ -1,6 +1,6 @@
 package lk.uom.dc.data.message;
 
-import lk.uom.dc.data.Peer;
+import lk.uom.dc.Peer;
 import lk.uom.dc.settings.Settings;
 import lombok.Getter;
 

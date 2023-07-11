@@ -1,6 +1,6 @@
 package lk.uom.dc.data.message;
 
-import lk.uom.dc.data.Peer;
+import lk.uom.dc.Peer;
 import lk.uom.dc.settings.Settings;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -43,9 +43,9 @@ import static lk.uom.dc.log.LogManager.APP;
 public class RegOk extends Message {
 
     @Getter(AccessLevel.NONE)
-    private Token parent;
+    private Token type;
 
-    private Token child;
+    private Token state;
 
     private Peer first;
 
@@ -55,22 +55,22 @@ public class RegOk extends Message {
         super.sender = sender;
     }
 
-    public RegOk(Token child, Peer sender) {
-        this.parent = Token.REGOK;
-        this.child = child;
+    public RegOk(Token state, Peer sender) {
+        this.type = Token.REGOK;
+        this.state = state;
         super.sender = sender;
     }
 
     public RegOk(Peer first, Peer second, Peer sender) {
         this(null, sender);
 
-        if (null == first) this.child = Token.NO_NODES;
+        if (null == first) this.state = Token.NO_NODES;
         else {
             this.first = first;
-            this.child = Token.ONE;
+            this.state = Token.ONE;
 
             if (null != second) {
-                this.child = Token.TWO;
+                this.state = Token.TWO;
                 this.second = second;
             }
         }
@@ -88,13 +88,13 @@ public class RegOk extends Message {
 
         if (length != message.length()) throw new IllegalArgumentException("corrupt message");
 
-        parent = Token.valueOf(split[1].toUpperCase());
+        type = Token.valueOf(split[1].toUpperCase());
 
-        child = Token.valueOf(split[2]);
+        state = Token.valueOf(split[2]);
 
         String host;
         int port;
-        switch (child) {
+        switch (state) {
             case NO_NODES -> {
                 APP.debug("No peers found");
                 first = null;
@@ -109,9 +109,9 @@ public class RegOk extends Message {
                 second = null;
             }
 
-            case ERRONEOUS -> APP.error("{}}: {}, sender: ", child.description, message, sender);
+            case ERRONEOUS -> APP.error("{}}: {}, sender: ", state.description, message, sender);
 
-            case ALREADY_REGISTERED, PORT_OCCUPIED, BS_FULL -> APP.error("{}, sender: ", child.description, sender);
+            case ALREADY_REGISTERED, PORT_OCCUPIED, BS_FULL -> APP.error("{}, sender: ", state.description, sender);
 
             default -> {
                 try {
@@ -146,21 +146,21 @@ public class RegOk extends Message {
 
     @Override
     protected StringJoiner toStringJoiner() {
-        Objects.requireNonNull(parent);
-        Objects.requireNonNull(child);
+        Objects.requireNonNull(type);
+        Objects.requireNonNull(state);
 
         StringJoiner joiner = new StringJoiner(Settings.FS)
-                .add(parent.name().toUpperCase())
-                .add(child.id);
+                .add(type.name().toUpperCase())
+                .add(state.id);
 
         if (null != first) {
-            joiner.add(first.address().getAddress().getHostAddress())
-                    .add(String.valueOf(first.address().getPort()));
+            joiner.add(first.getSocket().getAddress().getHostAddress())
+                    .add(String.valueOf(first.getSocket().getPort()));
         }
 
         if (null != second) {
-            joiner.add(second.address().getAddress().getHostAddress())
-                    .add(String.valueOf(second.address().getPort()));
+            joiner.add(second.getSocket().getAddress().getHostAddress())
+                    .add(String.valueOf(second.getSocket().getPort()));
         }
 
         return joiner;
