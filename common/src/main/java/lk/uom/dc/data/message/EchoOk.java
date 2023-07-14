@@ -13,7 +13,7 @@ import java.util.StringJoiner;
 @NoArgsConstructor
 @Getter
 @Setter(AccessLevel.NONE)
-public class EchoOk extends Message {
+public class EchoOk extends Message<EchoOk.Token> {
 
     @Getter(AccessLevel.NONE)
     private Token type;
@@ -27,7 +27,7 @@ public class EchoOk extends Message {
     }
 
     @Override
-    public void parseMessage(String message) {
+    public void parseMessage(String[] message) {
     }
 
     @Override

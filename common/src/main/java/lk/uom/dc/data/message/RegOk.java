@@ -40,7 +40,7 @@ import static lk.uom.dc.log.LogManager.APP;
 @NoArgsConstructor
 @Getter
 @Setter(AccessLevel.NONE)
-public class RegOk extends Message {
+public class RegOk extends Message<RegOk.Token> {
 
     @Getter(AccessLevel.NONE)
     private Token type;
@@ -77,20 +77,11 @@ public class RegOk extends Message {
     }
 
     @Override
-    public void parseMessage(String message) {
+    public void parseMessage(String[] message) {
 
-        String[] split = message.split(Settings.FS);
+        type = Token.find(message[1].toUpperCase());
 
-        final int length = Integer.parseInt(split[0]);
-        if (length < 0 || length > 9999) {
-            throw new IllegalArgumentException("length must be between 0 and 9999");
-        }
-
-        if (length != message.length()) throw new IllegalArgumentException("corrupt message");
-
-        type = Token.valueOf(split[1].toUpperCase());
-
-        state = Token.valueOf(split[2]);
+        state = Token.find(message[2]);
 
         String host;
         int port;
@@ -103,8 +94,8 @@ public class RegOk extends Message {
 
             case ONE -> {
                 APP.debug("1 peer found");
-                host = split[3];
-                port = Integer.parseInt(split[3 + 1]);
+                host = message[3];
+                port = Integer.parseInt(message[3 + 1]);
                 first = new Peer(new InetSocketAddress(host, port), UUID.randomUUID().toString());
                 second = null;
             }
@@ -115,13 +106,13 @@ public class RegOk extends Message {
 
             default -> {
                 try {
-                    final int peerCount = Integer.parseInt(split[2]);
+                    final int peerCount = Integer.parseInt(message[2]);
                     final List<Peer> peers = new ArrayList<>(2);
 
                     // bootstrap can send more than 2 peers
                     for (int i = 0; i < peerCount; i += 2) {
-                        host = split[3 + i];
-                        port = Integer.parseInt(split[3 + 1 + i]);
+                        host = message[3 + i];
+                        port = Integer.parseInt(message[3 + 1 + i]);
                         Peer peer = new Peer(new InetSocketAddress(host, port), UUID.randomUUID().toString());
 
                         // I trust that bootstrap only sends unique peers
@@ -178,6 +169,18 @@ public class RegOk extends Message {
 
         public final String id;
         public final String description;
+
+        private static final Map<String, Token> inversionMap;
+
+        static {
+            Map<String, Token> invert = HashMap.newHashMap(6);
+            Arrays.stream(values()).sequential().forEach(token -> invert.put(token.id, token));
+            inversionMap = Collections.unmodifiableMap(invert);
+        }
+
+        public static Token find(String key) {
+            return inversionMap.get(key);
+        }
 
         Token(String id, String description) {
             this.id = id;

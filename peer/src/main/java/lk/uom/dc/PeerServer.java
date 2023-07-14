@@ -25,11 +25,9 @@ public class PeerServer implements AutoCloseable {
      * This is the current peer itself.
      * This is used to transmit details of this peer to bootstrap and other peers
      */
-    @Getter
-    private final Peer self;
+    public final Peer self;
 
-    @Getter
-    private final DatagramSocket socket;
+    public final DatagramSocket socket;
 
     /**
      * Every peer connects to other 2 peers. I named them first and second for convenience.
@@ -84,8 +82,16 @@ public class PeerServer implements AutoCloseable {
             );
             BootstrapService bootstrapService = new BootstrapService(peerServer, bootstrap);
 
+            // 3. Search Service
+            SearchService searchService = new SearchService(peerServer);
+
             // 3. incoming message handler
-            MessageService messageService = new MessageService(peerServer, heartbeat, bootstrapService);
+            MessageService messageService = new MessageService(
+                    peerServer,
+                    heartbeat,
+                    bootstrapService,
+                    searchService
+            );
             Thread listenerService = Thread.ofVirtual()
                     .name(messageService.name())
                     .unstarted(messageService);
@@ -118,11 +124,14 @@ public class PeerServer implements AutoCloseable {
             // (C) Connect to bootstrap and get first set of peers
             bootstrapService.register();
 
+            while (true) {
+            }
+
         } catch (IOException e) {
             APP.error(e.getMessage(), e);
 
         } catch (Exception e) {
-            APP.error(e.getMessage(), e);
+            APP.error("Irrecoverable exception occured", e);
             System.exit(-1);
         }
     }

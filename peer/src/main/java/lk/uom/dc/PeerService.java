@@ -11,18 +11,18 @@ import static lk.uom.dc.log.LogManager.APP;
  */
 public class PeerService implements Threadable {
 
-    private final PeerServer peerServer;
+    private final PeerServer server;
 
-    public PeerService(PeerServer peerServer) {
-        this.peerServer = peerServer;
+    public PeerService(PeerServer server) {
+        this.server = server;
     }
 
     private void join(Peer peer) {
         if (null != peer && !peer.isConnected()) {
             // as of now sender and maker are us
-            Join join = new Join(Join.Token.JOIN, peerServer.getSelf());
+            Join join = new Join(Join.Token.JOIN, server.self);
             try {
-                peerServer.send(join, peer);
+                server.send(join, peer);
                 APP.info("joining {}", peer);
             } catch (IOException ioException) {
                 APP.error("cannot join with {}", peer, ioException);
@@ -33,8 +33,8 @@ public class PeerService implements Threadable {
 
     @Override
     public void run() {
-        join(peerServer.getFirst());
-        join(peerServer.getSecond());
+        join(server.getFirst());
+        join(server.getSecond());
     }
 
     @Override

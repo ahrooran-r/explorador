@@ -17,9 +17,17 @@ public class Settings {
      * Field separator
      */
     public final static String FS = " ";
+    /**
+     * Index separator. For file names. Since " " is already used,
+     * sharing file names in such a way would not be trivial.
+     * File name " " chars will be re-encoded with "_" when sending and decoded when receiving.
+     */
+    public final static String IS = "_";
 
     public static final Path LOG_SETTINGS_PATH = Paths.get("config", "log-settings.yml");
     public static final Path APP_SETTINGS_PATH = Paths.get("config", "application.yml");
+    public static final Path NAMES_PATH = Paths.get("config", "names.txt");
+    public static final Path QUERIES_PATH = Paths.get("config", "queries.txt");
 
     /**
      * Peer server settings
@@ -30,8 +38,9 @@ public class Settings {
     public static final Duration PING_INTERVAL;
     public static final int NUM_PEERS;
     public static final int FAILURE_COUNT;
+    public static final String UNKNOWN_USER = "unknown";
 
-    /*
+    /**
      * Bootstrap server settings
      * */
     public static final String BOOTSTRAP_HOST;

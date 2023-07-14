@@ -1,19 +1,16 @@
 package lk.uom.dc;
 
-import lk.uom.dc.data.message.EchoOk;
-import lk.uom.dc.data.message.Join;
-import lk.uom.dc.data.message.RegOk;
-import lk.uom.dc.data.message.UnRegOk;
+import lk.uom.dc.data.message.*;
 import lk.uom.dc.settings.Settings;
 
 import java.io.IOException;
 import java.net.DatagramPacket;
-import java.net.InetSocketAddress;
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 
 import static lk.uom.dc.log.LogManager.APP;
 
-public class MessageService implements MessageListener, Threadable {
+public class MessageService implements AbstractMessageListener, Threadable {
 
     private final PeerServer server;
 
@@ -21,25 +18,30 @@ public class MessageService implements MessageListener, Threadable {
 
     private final BootstrapService bootstrapService;
 
+    private final SearchService searchService;
+
     public MessageService(
             PeerServer server,
             HeartbeatService heartbeatService,
-            BootstrapService bootstrapService
+            BootstrapService bootstrapService,
+            SearchService searchService
     ) {
         this.server = server;
         this.heartbeatService = heartbeatService;
         this.bootstrapService = bootstrapService;
+        this.searchService = searchService;
     }
 
     @Override
-    public void onMessage(String message, InetSocketAddress sender) throws IOException {
+    public void onMessage(DatagramPacket message) throws IOException {
         // length -> 0, token -> 1
-        Token token = Token.valueOf(message.split(Settings.FS)[1].toUpperCase());
+        String raw = new String(message.getData(), 0, message.getLength(), StandardCharsets.UTF_8);
+        Token token = Token.valueOf(raw.split(Settings.FS)[1].toUpperCase());
 
         switch (token) {
 
             case REGOK -> {
-                RegOk regOk = new RegOk(new Peer(sender, Settings.BOOTSTRAP_USERNAME));
+                RegOk regOk = new RegOk();
                 regOk.parseMessage(message);
 
                 switch (regOk.getState()) {
@@ -81,7 +83,11 @@ public class MessageService implements MessageListener, Threadable {
                 echoOk.parseMessage(message);
             }
 
-            case PING -> heartbeatService.sendPong(sender);
+            case PING -> {
+                Heartbeat heartbeat = new Heartbeat();
+                heartbeat.parseMessage(message);
+                heartbeatService.replyPong(heartbeat);
+            }
 
             // what if I get a join message -> need to accept
             case JOIN -> {
@@ -92,7 +98,7 @@ public class MessageService implements MessageListener, Threadable {
                 boolean canSecondAccept = null == server.getSecond() || !server.getSecond().isConnected();
 
                 // if successful reply with a joinok message
-                final Join joinOk = new Join(Join.Token.JOINOK, server.getSelf());
+                final Join joinOk = new Join(Join.Token.JOINOK, server.self);
 
                 if (canFirstAccept) {
                     server.setFirst(join.getSender());
@@ -105,7 +111,7 @@ public class MessageService implements MessageListener, Threadable {
                     server.send(joinOk, join.getSender());
                 } else {
                     // reject
-                    Join reject = new Join(Join.Token.NOJOIN, server.getSelf());
+                    Join reject = new Join(Join.Token.ERROR, server.self);
                     server.send(reject, join.getSender());
                 }
             }
@@ -123,17 +129,20 @@ public class MessageService implements MessageListener, Threadable {
                 }
             }
 
-            case NOJOIN -> {
-                Join joinReject = new Join();
-                joinReject.parseMessage(message);
+            case LEAVE -> {
+                Join leave = new Join();
+                leave.parseMessage(message);
 
-                boolean forFirst = joinReject.getSender().equals(server.getFirst());
-                boolean forSecond = joinReject.getSender().equals(server.getSecond());
+                boolean forFirst = leave.getSender().equals(server.getFirst());
+                boolean forSecond = leave.getSender().equals(server.getSecond());
                 if (forFirst) {
                     server.setFirst(null);
                 } else if (forSecond) {
                     server.setSecond(null);
                 }
+                
+                // send leave ok message
+                Join leaveOk = new Join(Join.Token.LEAVEOK, server.self);
             }
         }
     }
@@ -145,7 +154,7 @@ public class MessageService implements MessageListener, Threadable {
             try {
                 byte[] buffer = new byte[Settings.BOOTSTRAP_MSG_SIZE];
                 DatagramPacket incoming = new DatagramPacket(buffer, buffer.length);
-                server.getSocket().receive(incoming);
+                server.socket.receive(incoming);
                 onMessage(incoming);
             } catch (RuntimeException | IOException any) {
                 APP.error(any.getMessage(), any);
@@ -172,10 +181,10 @@ public class MessageService implements MessageListener, Threadable {
         PING("PING", "calling ping"),
         PONG("PONG", "echoing pong"),
 
-        JOIN("JOIN", "join request"),
-        JOINOK("JOIN", "accept join invite"),
-        NOJOIN("NOJOIN", "reject join invite"),
-        UNJOIN("UNJOIN", "unjoin request");
+        JOIN("JOIN", "join with me"),
+        LEAVE("LEAVE", "leave me"),
+        JOINOK("JOINOK", "accept join invite"),
+        LEAVEOK("LEAVEOK", "leave accepted");
 
         public final String id;
         public final String description;

@@ -23,7 +23,7 @@ public class BootstrapService {
 
     public boolean register() {
         try {
-            Request register = new Request(Request.Token.REG, peerServer.getSelf());
+            Request register = new Request(Request.Token.REG, peerServer.self);
             peerServer.send(register, bootstrap);
             APP.info("Registering to bootstrap");
             return true;
@@ -35,7 +35,7 @@ public class BootstrapService {
 
     public boolean unRegister() {
         try {
-            Request unregister = new Request(Request.Token.UNREG, peerServer.getSelf());
+            Request unregister = new Request(Request.Token.UNREG, peerServer.self);
 
             // remove existing peers
             peerServer.setFirst(null);

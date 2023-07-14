@@ -7,15 +7,14 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-import java.util.Objects;
-import java.util.StringJoiner;
+import java.util.*;
 
 import static lk.uom.dc.log.LogManager.APP;
 
 @NoArgsConstructor
 @Getter
 @Setter(AccessLevel.NONE)
-public class UnRegOk extends Message {
+public class UnRegOk extends Message<UnRegOk.Token> {
 
     @Getter(AccessLevel.NONE)
     private Token type;
@@ -29,18 +28,9 @@ public class UnRegOk extends Message {
     }
 
     @Override
-    public void parseMessage(String message) {
-        String[] split = message.split(Settings.FS);
-
-        final int length = Integer.parseInt(split[0]);
-        if (length < 0 || length > 9999) {
-            throw new IllegalArgumentException("length must be between 0 and 9999");
-        }
-
-        if (length != message.length()) throw new IllegalArgumentException("corrupt message");
-
-        type = Token.valueOf(split[1].toUpperCase());
-        state = Token.valueOf(split[2].toUpperCase());
+    public void parseMessage(String[] message) {
+        type = Token.find(message[1]);
+        state = Token.find(message[2]);
 
         switch (state) {
             case SUCCESS -> APP.info("{}, message: {}", state.description, message);
@@ -68,6 +58,18 @@ public class UnRegOk extends Message {
 
         public final String id;
         public final String description;
+
+        private static final Map<String, Token> inversionMap;
+
+        static {
+            Map<String, Token> invert = HashMap.newHashMap(6);
+            Arrays.stream(values()).sequential().forEach(token -> invert.put(token.id, token));
+            inversionMap = Collections.unmodifiableMap(invert);
+        }
+
+        public static Token find(String key) {
+            return inversionMap.get(key);
+        }
 
         Token(String id, String description) {
             this.id = id;

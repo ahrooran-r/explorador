@@ -15,34 +15,26 @@ import static lk.uom.dc.log.LogManager.PING;
 @NoArgsConstructor
 @Getter
 @Setter(AccessLevel.NONE)
-public class PingPong extends Message {
+public class Heartbeat extends Message<Heartbeat.Token> {
 
     @Getter(AccessLevel.NONE)
     private Token state;
 
-    public PingPong(Token state, Peer from) {
+    public Heartbeat(Token state, Peer from) {
         this.state = state;
         this.sender = from;
     }
 
     @Override
-    public void parseMessage(String message) {
-        String[] split = message.split(Settings.FS);
-
-        final int length = Integer.parseInt(split[0]);
-        if (length < 0 || length > 9999) {
-            throw new IllegalArgumentException("length must be between 0 and 9999");
-        }
-
-        if (length != message.length()) throw new IllegalArgumentException("corrupt message");
-
-        state = Token.valueOf(split[1].toUpperCase());
-
-        String host = split[2];
-        int port = Integer.parseInt(split[3]);
+    public void parseMessage(String[] message) {
+        state = Token.valueOf(message[1].toUpperCase());
 
         switch (state) {
-            case PING, PONG -> PING.info("{}, from -> host: {}, port: {}", state.description, host, port);
+            case PING, PONG -> PING.info("{}, from -> host: {}, port: {}",
+                    state.description,
+                    sender.getSocket().getAddress(),
+                    sender.getSocket().getPort()
+            );
         }
     }
 

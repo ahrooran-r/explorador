@@ -6,22 +6,23 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import java.net.InetSocketAddress;
-import java.util.Objects;
-import java.util.StringJoiner;
+import java.util.*;
 
 /**
  * Message would look something like this:
  * length -> sender of message -> sender's username
  *
- * <pre>length JOIN IP_address port_no username num_hops </pre>
+ * <pre>length JOIN IP_address port_no </pre>
  * <p>
- * e.g., 0036 JOIN 129.82.123.45 5001 1234abcd
+ * e.g., 0036 JOIN 129.82.123.45 5001
  */
 @NoArgsConstructor
 @Getter
-public class Join extends Message {
+public class Join extends Message<Join.Token> {
 
     private Token type;
+
+    private Token state;
 
     public Join(Token type, Peer sender) {
         super.sender = sender;
@@ -29,23 +30,24 @@ public class Join extends Message {
     }
 
     @Override
-    public void parseMessage(String message) {
+    public void parseMessage(String[] message) {
 
-        String[] split = message.split(Settings.FS);
+        type = Token.find(message[1].toUpperCase());
 
-        final int length = Integer.parseInt(split[0]);
-        if (length < 0 || length > 9999) {
-            throw new IllegalArgumentException("username length must be between 0 and 9999");
+        switch (type) {
+            case JOIN, LEAVE -> {
+                final String host = message[2];
+                final int port = Integer.parseInt(message[3]);
+                sender = new Peer(new InetSocketAddress(host, port), Settings.UNKNOWN_USER);
+                state = null;
+            }
+
+            case JOINOK, LEAVEOK -> {
+                String success = message[2];
+                state = Token.find(success);
+            }
         }
 
-        if (length != message.length()) throw new IllegalArgumentException("corrupt message");
-
-        type = Token.valueOf(split[1].toUpperCase());
-
-        final String host = split[2];
-        final int port = Integer.parseInt(split[3]);
-        final String username = split[4];
-        sender = new Peer(new InetSocketAddress(host, port), username);
     }
 
     @Override
@@ -53,24 +55,48 @@ public class Join extends Message {
         Objects.requireNonNull(type);
         Objects.requireNonNull(sender);
 
-        return new StringJoiner(Settings.FS)
-                .add(type.name().toUpperCase())
-                .add(sender.getSocket().getAddress().getHostAddress())
-                .add(String.valueOf(sender.getSocket().getPort()))
-                .add(sender.getUsername());
+        switch (type) {
+            case JOIN, LEAVE -> {
+                return new StringJoiner(Settings.FS)
+                        .add(type.name().toUpperCase())
+                        .add(sender.getSocket().getAddress().getHostAddress())
+                        .add(String.valueOf(sender.getSocket().getPort()));
+            }
+
+            case JOINOK, LEAVEOK -> {
+                return new StringJoiner(Settings.FS)
+                        .add(type.name().toUpperCase())
+                        .add(state.id);
+            }
+
+            default -> throw new IllegalStateException("unable to construct a join message");
+        }
     }
 
     public enum Token {
 
         JOIN("JOIN", "join with me"),
-        JOINOK("JOINOK", "accept join invite"),
-        NOJOIN("NOJOIN", "reject join invite"),
+        LEAVE("LEAVE", "leave me"),
 
-        UNJOIN("UNJOIN", "unjoin with me");
-        // this does not have an ok message -> fire and forget
+        JOINOK("JOINOK", "accept join invite"),
+        LEAVEOK("LEAVEOK", "leave accepted"),
+        SUCCESS("0", "join success"),
+        ERROR("9999", "error while adding / reject join invite");
 
         public final String id;
         public final String description;
+
+        private static final Map<String, Token> inversionMap;
+
+        static {
+            Map<String, Token> invert = HashMap.newHashMap(6);
+            Arrays.stream(values()).sequential().forEach(token -> invert.put(token.id, token));
+            inversionMap = Collections.unmodifiableMap(invert);
+        }
+
+        public static Token find(String key) {
+            return inversionMap.get(key);
+        }
 
         Token(String id, String description) {
             this.id = id;

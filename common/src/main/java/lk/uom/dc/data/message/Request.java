@@ -32,7 +32,7 @@ import java.util.StringJoiner;
  */
 @NoArgsConstructor
 @Getter
-public class Request extends Message {
+public class Request extends Message<Request.Token> {
 
     private Token type;
 
@@ -42,23 +42,13 @@ public class Request extends Message {
     }
 
     @Override
-    public void parseMessage(String message) {
+    public void parseMessage(String[] message) {
 
-        String[] split = message.split(Settings.FS);
+        type = Token.valueOf(message[1].toUpperCase());
 
-        final int length = Integer.parseInt(split[0]);
-        if (length < 0 || length > 9999) {
-            throw new IllegalArgumentException("username length must be between 0 and 9999");
-        }
-
-        if (length != message.length()) throw new IllegalArgumentException("corrupt message");
-
-        type = Token.valueOf(split[1].toUpperCase());
-
-        final String host = split[2];
-        final int port = Integer.parseInt(split[3]);
-        final String username = split[3];
-        sender = new Peer(new InetSocketAddress(host, port), username);
+        final String host = message[2];
+        final int port = Integer.parseInt(message[3]);
+        sender = new Peer(new InetSocketAddress(host, port), Settings.UNKNOWN_USER);
     }
 
     @Override

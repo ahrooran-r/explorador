@@ -1,28 +1,38 @@
 package lk.uom.dc;
 
-import lk.uom.dc.data.message.PingPong;
+import lk.uom.dc.data.message.Heartbeat;
 import lk.uom.dc.settings.Settings;
 
 import java.io.IOException;
-import java.net.InetSocketAddress;
 import java.time.LocalDateTime;
 
 import static lk.uom.dc.log.LogManager.PING;
 
 public class HeartbeatService implements Threadable {
 
-    private final PeerServer peerServer;
+    private final PeerServer server;
 
     private int firstFailureCount = 0;
     private int secondFailureCount = 0;
 
-    public HeartbeatService(PeerServer peerServer) {
-        this.peerServer = peerServer;
+    public HeartbeatService(PeerServer server) {
+        this.server = server;
     }
 
-    public void sendPong(InetSocketAddress to) throws IOException {
-        PingPong pong = new PingPong(PingPong.Token.PONG, peerServer.getSelf());
-        NetAssist.send(pong, peerServer.getSocket(), to);
+    private void sendPing(Peer peer) throws IOException {
+        if (isEligible(peer)) {
+            // create ping msg
+            Heartbeat ping = new Heartbeat(Heartbeat.Token.PING, server.self);
+            LocalDateTime now = LocalDateTime.now();
+
+            NetAssist.send(ping, server.socket, peer.getSocket());
+            peer.setLastPinged(now);
+        }
+    }
+
+    public void replyPong(Heartbeat ping) throws IOException {
+        Heartbeat pong = new Heartbeat(Heartbeat.Token.PONG, server.self);
+        NetAssist.send(pong, server.socket, ping.getSender().getSocket());
     }
 
     /**
@@ -33,8 +43,8 @@ public class HeartbeatService implements Threadable {
     @Override
     public void run() {
 
-        Peer first = peerServer.getFirst();
-        Peer second = peerServer.getSecond();
+        Peer first = server.getFirst();
+        Peer second = server.getSecond();
         LocalDateTime now = LocalDateTime.now();
 
         if (
@@ -46,8 +56,8 @@ public class HeartbeatService implements Threadable {
             firstFailureCount++;
 
             if (firstFailureCount > Settings.FAILURE_COUNT) {
-                PING.warn("lost peer: {}", peerServer.getFirst());
-                peerServer.setFirst(null);
+                PING.warn("lost peer: {}", server.getFirst());
+                server.setFirst(null);
                 firstFailureCount = 0;
             }
         }
@@ -60,21 +70,21 @@ public class HeartbeatService implements Threadable {
             secondFailureCount++;
 
             if (secondFailureCount > Settings.FAILURE_COUNT) {
-                PING.warn("lost peer: {}", peerServer.getSecond());
-                peerServer.setSecond(null);
+                PING.warn("lost peer: {}", server.getSecond());
+                server.setSecond(null);
                 secondFailureCount = 0;
             }
         }
 
         // send next ping
         try {
-            sendPing(peerServer.getFirst());
+            sendPing(server.getFirst());
         } catch (IOException exception) {
             PING.error(exception.getMessage(), exception);
         }
 
         try {
-            sendPing(peerServer.getSecond());
+            sendPing(server.getSecond());
         } catch (IOException exception) {
             PING.error(exception.getMessage(), exception);
         }
@@ -98,16 +108,5 @@ public class HeartbeatService implements Threadable {
                 // initially peer will not have the connected flag set
                 // at the same, last ping time also will be 0
                 (null == peer.getLastPinged() || peer.isConnected());
-    }
-
-    private void sendPing(Peer peer) throws IOException {
-        if (isEligible(peer)) {
-            // create ping msg
-            PingPong ping = new PingPong(PingPong.Token.PING, peerServer.getSelf());
-            LocalDateTime now = LocalDateTime.now();
-
-            NetAssist.send(ping, peerServer.getSocket(), peer.getSocket());
-            peer.setLastPinged(now);
-        }
     }
 }
