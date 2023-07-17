@@ -19,7 +19,7 @@ public class HeartbeatService implements Threadable {
         this.server = server;
     }
 
-    private void sendPing(Peer peer) throws IOException {
+    private void ping(Peer peer) throws IOException {
         if (isEligible(peer)) {
             // create ping msg
             Heartbeat ping = new Heartbeat(Heartbeat.Token.PING, server.self);
@@ -30,9 +30,9 @@ public class HeartbeatService implements Threadable {
         }
     }
 
-    public void replyPong(Heartbeat ping) throws IOException {
+    public void pong(Heartbeat ping) throws IOException {
         Heartbeat pong = new Heartbeat(Heartbeat.Token.PONG, server.self);
-        NetAssist.send(pong, server.socket, ping.getSender().getSocket());
+        NetAssist.send(pong, server.socket, ping.sender().getSocket());
     }
 
     /**
@@ -43,8 +43,8 @@ public class HeartbeatService implements Threadable {
     @Override
     public void run() {
 
-        Peer first = server.getFirst();
-        Peer second = server.getSecond();
+        Peer first = server.first();
+        Peer second = server.second();
         LocalDateTime now = LocalDateTime.now();
 
         if (
@@ -56,7 +56,7 @@ public class HeartbeatService implements Threadable {
             firstFailureCount++;
 
             if (firstFailureCount > Settings.FAILURE_COUNT) {
-                PING.warn("lost peer: {}", server.getFirst());
+                PING.warn("lost peer: {}", server.first());
                 server.setFirst(null);
                 firstFailureCount = 0;
             }
@@ -70,7 +70,7 @@ public class HeartbeatService implements Threadable {
             secondFailureCount++;
 
             if (secondFailureCount > Settings.FAILURE_COUNT) {
-                PING.warn("lost peer: {}", server.getSecond());
+                PING.warn("lost peer: {}", server.second());
                 server.setSecond(null);
                 secondFailureCount = 0;
             }
@@ -78,13 +78,13 @@ public class HeartbeatService implements Threadable {
 
         // send next ping
         try {
-            sendPing(server.getFirst());
+            ping(server.first());
         } catch (IOException exception) {
             PING.error(exception.getMessage(), exception);
         }
 
         try {
-            sendPing(server.getSecond());
+            ping(server.second());
         } catch (IOException exception) {
             PING.error(exception.getMessage(), exception);
         }

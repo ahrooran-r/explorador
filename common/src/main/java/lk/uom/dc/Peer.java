@@ -45,8 +45,23 @@ public class Peer {
         return username.equals(peer.username);
     }
 
+    /**
+     * only checks ports, not username
+     */
+    public boolean fuzzyEquals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        Peer peer = (Peer) o;
+
+        return socket.getPort() == peer.socket.getPort();
+    }
+
+    /**
+     * Depends only on port
+     */
     @Override
     public int hashCode() {
-        return 31 * socket.getPort() + username.hashCode();
+        return socket.getPort();
     }
 }

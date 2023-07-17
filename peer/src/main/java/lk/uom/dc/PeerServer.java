@@ -2,7 +2,6 @@ package lk.uom.dc;
 
 import lk.uom.dc.data.message.Message;
 import lk.uom.dc.settings.Settings;
-import lombok.Getter;
 import lombok.Setter;
 
 import java.io.IOException;
@@ -32,11 +31,9 @@ public class PeerServer implements AutoCloseable {
     /**
      * Every peer connects to other 2 peers. I named them first and second for convenience.
      */
-    @Getter
     @Setter
     private volatile Peer first;
 
-    @Getter
     @Setter
     private volatile Peer second;
 
@@ -144,15 +141,29 @@ public class PeerServer implements AutoCloseable {
     /**
      * Returns response. Should move to common package since Peer server also handles this part.
      */
-    public void send(Message message, SocketAddress to) throws IOException {
+    public void send(Message<?> message, SocketAddress to) throws IOException {
         NetAssist.send(message, socket, to);
     }
 
     /**
      * send messages to other peers
      */
-    public void send(Message message, Peer to) throws IOException {
+    public void send(Message<?> message, Peer to) throws IOException {
         send(message, to.getSocket());
     }
 
+    /**
+     * Reply to an incoming message
+     */
+    public void reply(Message<?> reply, Message<?> to) throws IOException {
+        send(reply, to.sender());
+    }
+
+    public Peer first() {
+        return this.first;
+    }
+
+    public Peer second() {
+        return this.second;
+    }
 }

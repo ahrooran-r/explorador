@@ -3,8 +3,7 @@ peerServer:
   port: 4444
   username: barbossa
   pingInterval: PT1M
-  joinInterval: PT10S
-  numPeers: 2
+  historyPreserve: PT5M
   failureCount: 3
 
 bootstrap:

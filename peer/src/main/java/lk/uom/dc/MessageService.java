@@ -63,8 +63,8 @@ public class MessageService implements AbstractMessageListener, Threadable {
                     }
 
                     default -> {
-                        if (null == server.getFirst()) server.setFirst(regOk.getFirst());
-                        if (null == server.getSecond()) server.setSecond(regOk.getSecond());
+                        if (null == server.first()) server.setFirst(regOk.getFirst());
+                        if (null == server.second()) server.setSecond(regOk.getSecond());
                     }
                 }
             }
@@ -81,68 +81,111 @@ public class MessageService implements AbstractMessageListener, Threadable {
             case ECHOK -> {
                 EchoOk echoOk = new EchoOk();
                 echoOk.parseMessage(message);
-            }
-
-            case PING -> {
-                Heartbeat heartbeat = new Heartbeat();
-                heartbeat.parseMessage(message);
-                heartbeatService.replyPong(heartbeat);
+                // there is nothing to do about this
             }
 
             // what if I get a join message -> need to accept
             case JOIN -> {
-                Join join = new Join();
-                join.parseMessage(message);
 
-                boolean canFirstAccept = null == server.getFirst() || !server.getFirst().isConnected();
-                boolean canSecondAccept = null == server.getSecond() || !server.getSecond().isConnected();
+                Join joinMsg = new Join();
+                joinMsg.parseMessage(message);
 
-                // if successful reply with a joinok message
-                final Join joinOk = new Join(Join.Token.JOINOK, server.self);
+                boolean forFirst = joinMsg.sender().fuzzyEquals(server.first());
+                boolean forSecond = joinMsg.sender().fuzzyEquals(server.second());
 
-                if (canFirstAccept) {
-                    server.setFirst(join.getSender());
-                    server.getFirst().setConnected(true);
-                    server.send(joinOk, join.getSender());
+                switch (joinMsg.getType()) {
+                    case JOIN -> {
+                        // if successful reply with a joinok message
+                        final Join joinOk = new Join(Join.Token.JOINOK, server.self);
 
-                } else if (canSecondAccept) {
-                    server.setSecond(join.getSender());
-                    server.getSecond().setConnected(true);
-                    server.send(joinOk, join.getSender());
+                        if (null == server.first()) {
+                            server.setFirst(joinMsg.sender());
+                            // server.first().setConnected(true);
+                            server.reply(joinOk, joinMsg);
+
+                        } else if (null == server.second()) {
+                            server.setSecond(joinMsg.sender());
+                            // server.second().setConnected(true);
+                            server.reply(joinOk, joinMsg);
+                        } else {
+
+                            // suppose first and second are already set
+                            // but not connected and waiting for join ok message
+
+                            if (!forFirst && !forSecond) {
+                                // then reject
+                                Join reject = new Join(Join.Token.ERROR, server.self);
+                                server.reply(reject, joinMsg);
+                            }
+                        }
+                    }
+
+                    case JOINOK -> {
+                        if (forFirst && !server.first().isConnected()) {
+                            server.first().setConnected(true);
+                        } else if (forSecond && !server.second().isConnected()) {
+                            server.second().setConnected(true);
+                        }
+                    }
+
+                    case LEAVE -> {
+                        if (forFirst) server.first().setConnected(false);
+                        else if (forSecond) server.second().setConnected(false);
+
+                        // send leave ok message
+                        Join leaveOk = new Join(Join.Token.LEAVEOK, Join.Token.SUCCESS, server.self);
+                        server.reply(leaveOk, joinMsg);
+                    }
+
+                    case LEAVEOK -> {
+                        if (forFirst) server.setFirst(null);
+                        else if (forSecond) server.setSecond(null);
+                    }
+                }
+
+            }
+
+
+            case PING -> {
+                Heartbeat heartbeat = new Heartbeat();
+                heartbeat.parseMessage(message);
+                heartbeatService.pong(heartbeat);
+            }
+
+            case PONG -> {
+                // don't know what to do
+            }
+
+            case SER -> {
+
+                Search search = new Search();
+                search.parseMessage(message);
+
+                if (search.hops() > Settings.MAX_HOPS) return;
+
+                var result = searchService.search(search.query());
+                if (result.isEmpty()) {
+                    // pass it to peers
+                    search.setHops(search.hops() + 1);
+                    searchService.pass(search);
+
                 } else {
-                    // reject
-                    Join reject = new Join(Join.Token.ERROR, server.self);
-                    server.send(reject, join.getSender());
+                    // return response
+                    SearchOk searchOk = new SearchOk(result, server.self);
+                    server.reply(searchOk, search);
                 }
             }
 
-            case JOINOK -> {
-                Join joinOk = new Join();
-                joinOk.parseMessage(message);
+            case SEROK -> {
+                SearchOk searchOk = new SearchOk();
+                searchOk.parseMessage(message);
 
-                boolean forFirst = joinOk.getSender().equals(server.getFirst());
-                boolean forSecond = joinOk.getSender().equals(server.getSecond());
-                if (forFirst && !server.getFirst().isConnected()) {
-                    server.getFirst().setConnected(true);
-                } else if (forSecond && !server.getSecond().isConnected()) {
-                    server.getSecond().setConnected(true);
+                switch (searchOk.getState()) {
+                    case SUCCESS -> {
+                        // what to do print it?
+
+                    }
                 }
-            }
-
-            case LEAVE -> {
-                Join leave = new Join();
-                leave.parseMessage(message);
-
-                boolean forFirst = leave.getSender().equals(server.getFirst());
-                boolean forSecond = leave.getSender().equals(server.getSecond());
-                if (forFirst) {
-                    server.setFirst(null);
-                } else if (forSecond) {
-                    server.setSecond(null);
-                }
-                
-                // send leave ok message
-                Join leaveOk = new Join(Join.Token.LEAVEOK, server.self);
             }
         }
     }
@@ -182,9 +225,10 @@ public class MessageService implements AbstractMessageListener, Threadable {
         PONG("PONG", "echoing pong"),
 
         JOIN("JOIN", "join with me"),
-        LEAVE("LEAVE", "leave me"),
-        JOINOK("JOINOK", "accept join invite"),
-        LEAVEOK("LEAVEOK", "leave accepted");
+
+        SER("SER", "search for file"),
+        SEROK("SEROK", "file found");
+
 
         public final String id;
         public final String description;

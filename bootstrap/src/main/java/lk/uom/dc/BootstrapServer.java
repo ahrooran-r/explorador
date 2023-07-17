@@ -80,7 +80,7 @@ public class BootstrapServer implements MessageListener, AutoCloseable {
                     );
                 }
                 EchoOk echoOk = new EchoOk(EchoOk.Token.SUCCESSFUL, self);
-                reply(echoOk, request.getSender().getSocket());
+                reply(echoOk, request.sender().getSocket());
             }
         }
     }
@@ -90,7 +90,7 @@ public class BootstrapServer implements MessageListener, AutoCloseable {
      */
     private void handleReg(Request request) throws IOException {
 
-        final Peer joinee = request.getSender();
+        final Peer joinee = request.sender();
         RegOk regOk = null;
 
         if (peers.isEmpty()) {
@@ -140,7 +140,7 @@ public class BootstrapServer implements MessageListener, AutoCloseable {
      */
     private void handleUnReg(Request request) {
 
-        Peer joinee = request.getSender();
+        Peer joinee = request.sender();
 
         Predicate<Peer> replyAndRemove = peer -> {
             boolean shouldRemove = peer.getSocket().getPort() == joinee.getSocket().getPort();

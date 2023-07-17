@@ -4,6 +4,7 @@ import lk.uom.dc.Peer;
 import lk.uom.dc.settings.Settings;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 import java.net.InetSocketAddress;
 import java.util.*;
@@ -15,19 +16,20 @@ public class SearchOk extends Message<SearchOk.Token> {
 
     private Token state;
 
+    @Setter
     private int hops;
 
     Set<String> availableFiles;
 
-    public SearchOk(Peer sender, int hops, Set<String> availableFiles) {
+    public SearchOk(Set<String> availableFiles, Peer sender) {
         this.type = Token.SEROK;
         this.state = Token.SUCCESS;
         super.sender = sender;
-        this.hops = hops;
+        this.hops = 0;
         this.availableFiles = availableFiles;
     }
 
-    public SearchOk(Peer sender, Token state) {
+    public SearchOk(Token state, Peer sender) {
         this.type = Token.SEROK;
         this.state = state;
         super.sender = sender;

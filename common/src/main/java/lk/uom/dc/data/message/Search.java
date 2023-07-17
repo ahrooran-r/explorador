@@ -2,24 +2,24 @@ package lk.uom.dc.data.message;
 
 import lk.uom.dc.Peer;
 import lk.uom.dc.settings.Settings;
-import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 import java.net.InetSocketAddress;
 import java.util.Objects;
 import java.util.StringJoiner;
 
 @NoArgsConstructor
-@Getter
 public class Search extends Message<Search.Token> {
 
-    private String fileName;
+    private String query;
 
+    @Setter
     private int hops;
 
-    public Search(Peer sender, String fileName) {
+    public Search(Peer sender, String query) {
         this.type = Token.SER;
-        this.fileName = fileName;
+        this.query = query;
         this.hops = 0;
         super.sender = sender;
     }
@@ -32,10 +32,15 @@ public class Search extends Message<Search.Token> {
         final int port = Integer.parseInt(message[3]);
         sender = new Peer(new InetSocketAddress(host, port), Settings.UNKNOWN_USER);
 
-        this.fileName = message[4]
+        this.query = message[4]
                 .replaceAll("\"", "")
                 .replaceAll(Settings.IS, " ");
-        this.hops = Integer.parseInt(message[5]);
+
+        try {
+            this.hops = Integer.parseInt(message[5]);
+        } catch (RuntimeException ignored) {
+            this.hops = 0;
+        }
     }
 
     @Override
@@ -47,7 +52,7 @@ public class Search extends Message<Search.Token> {
                 .add(type.name().toUpperCase())
                 .add(sender.getSocket().getAddress().getHostAddress())
                 .add(String.valueOf(sender.getSocket().getPort()))
-                .add("\"" + fileName.replaceAll(" ", Settings.IS) + "\"")
+                .add("\"" + query.replaceAll(" ", Settings.IS) + "\"")
                 .add(hops == 0 ? "" : String.valueOf(hops));
     }
 
@@ -62,5 +67,13 @@ public class Search extends Message<Search.Token> {
             this.id = id;
             this.description = description;
         }
+    }
+
+    public String query() {
+        return query;
+    }
+
+    public int hops() {
+        return this.hops;
     }
 }

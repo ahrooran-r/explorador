@@ -2,8 +2,7 @@ package lk.uom.dc.data.message;
 
 import lk.uom.dc.Peer;
 import lk.uom.dc.settings.Settings;
-import lombok.AccessLevel;
-import lombok.Getter;
+import lombok.Setter;
 
 import java.net.DatagramPacket;
 import java.net.InetSocketAddress;
@@ -15,10 +14,9 @@ import static lk.uom.dc.log.LogManager.IN;
 public abstract class Message<T> {
 
     // message type
-    @Getter(AccessLevel.NONE)
     protected T type;
 
-    @Getter
+    @Setter
     protected Peer sender;
 
     protected abstract void parseMessage(String[] message);
@@ -64,4 +62,7 @@ public abstract class Message<T> {
                 .toString();
     }
 
+    public Peer sender() {
+        return this.sender;
+    }
 }

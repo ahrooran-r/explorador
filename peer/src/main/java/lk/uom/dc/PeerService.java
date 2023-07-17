@@ -33,8 +33,8 @@ public class PeerService implements Threadable {
 
     @Override
     public void run() {
-        join(server.getFirst());
-        join(server.getSecond());
+        join(server.first());
+        join(server.second());
     }
 
     @Override

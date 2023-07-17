@@ -29,6 +29,12 @@ public class Join extends Message<Join.Token> {
         this.type = type;
     }
 
+    public Join(Token type, Token state, Peer sender) {
+        super.sender = sender;
+        this.state = state;
+        this.type = type;
+    }
+
     @Override
     public void parseMessage(String[] message) {
 
